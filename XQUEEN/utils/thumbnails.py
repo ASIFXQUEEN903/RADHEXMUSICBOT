@@ -41,29 +41,34 @@ async def get_thumb(videoid):
         bg = raw_thumb.resize(template.size).filter(ImageFilter.GaussianBlur(10))
         final_img.paste(bg, (0, 0))
 
-        # Step 2: Crop square from center
+        # Step 2: Apply dark overlay only on blurred background
+        overlay = Image.new("RGBA", final_img.size, (0, 0, 0, 100))
+        final_img = Image.alpha_composite(final_img, overlay)
+
+        # Step 3: Prepare square thumbnail from center crop
         width, height = raw_thumb.size
         min_dim = min(width, height)
         left = (width - min_dim) // 2
         top = (height - min_dim) // 2
         thumb_crop = raw_thumb.crop((left, top, left + min_dim, top + min_dim))
 
-        # Step 3: Resize to fill left side (square)
-        left_img_size = 460  # size of the square image
+        # Step 4: Resize square image to fit top-left space
+        # Adjust size & position to match your template empty region
+        left_img_size = 320  # Try 320–400 as per visual fit
         thumb_square = thumb_crop.resize((left_img_size, left_img_size))
-        final_img.paste(thumb_square, (50, 150))  # Adjust as needed
+        final_img.paste(thumb_square, (60, 60))  # top-left position
 
-        # Step 4: Paste overlay template (with icons/buttons etc.)
+        # Step 5: Paste template (buttons etc.)
         final_img.paste(template, (0, 0), mask=template)
 
-        # Step 5: Add text
+        # Step 6: Add text on right side of thumbnail
         draw = ImageDraw.Draw(final_img)
         font_title = ImageFont.truetype("XQUEEN/assets/font.ttf", 45)
         font_tag = ImageFont.truetype("XQUEEN/assets/font2.ttf", 25)
 
-        draw.text((600, 70), clear(title), fill="white", font=font_title)
-        draw.text((600, 360), f"00:00 / {duration}", fill="white", font=font_tag)
-        draw.text((600, 420), "XQUEEN SERVER", fill="white", font=font_tag)
+        draw.text((400, 70), clear(title), fill="white", font=font_title)
+        draw.text((400, 130), f"00:00 / {duration}", fill="white", font=font_tag)
+        draw.text((400, 180), "XQUEEN SERVER", fill="white", font=font_tag)
 
         # Save and cleanup
         final_img.convert("RGB").save(output_path)
