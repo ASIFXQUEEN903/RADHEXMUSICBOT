@@ -1,16 +1,7 @@
-import os, re, aiohttp, aiofiles
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
-from unidecode import unidecode
+import os, aiohttp, aiofiles
+from PIL import Image, ImageFilter
 from youtubesearchpython.__future__ import VideosSearch
 from config import YOUTUBE_IMG_URL
-
-
-def clear(text):
-    result = ""
-    for word in text.split():
-        if len(result) + len(word) < 60:
-            result += " " + word
-    return result.strip()
 
 
 async def get_thumb(videoid):
@@ -19,51 +10,32 @@ async def get_thumb(videoid):
         return output_path
 
     try:
+        # Step 1: Get thumbnail URL from YouTube
         search = VideosSearch(f"https://www.youtube.com/watch?v={videoid}", limit=1)
         result = (await search.next())["result"][0]
-
-        title = re.sub(r"\W+", " ", result.get("title", "No Title")).title()
-        duration = result.get("duration", "00:00")
         thumb_url = result["thumbnails"][0]["url"].split("?")[0]
 
+        # Step 2: Download YouTube thumbnail
         async with aiohttp.ClientSession() as session:
             async with session.get(thumb_url) as resp:
                 if resp.status == 200:
                     async with aiofiles.open(f"cache/tmp_{videoid}.png", "wb") as f:
                         await f.write(await resp.read())
 
-        # Load assets
-        template = Image.open("XQUEEN/assets/thum.png").convert("RGBA")  # 1280x720
+        # Step 3: Load thum.png (overlay) and get its size
+        overlay_path = "XQUEEN/assets/thum.png"
+        overlay = Image.open(overlay_path).convert("RGBA")
+        width, height = overlay.size
+
+        # Step 4: Open downloaded YouTube thumb and make blurred bg
         yt_thumb = Image.open(f"cache/tmp_{videoid}.png").convert("RGB")
-        final = Image.new("RGBA", template.size)
+        bg = yt_thumb.resize((width, height)).filter(ImageFilter.GaussianBlur(4))
 
-        # Background blur
-        bg = yt_thumb.resize((1280, 720)).filter(ImageFilter.GaussianBlur(12))
-        final.paste(bg, (0, 0))
+        # Step 5: Combine blurred background and overlay
+        final = Image.alpha_composite(bg.convert("RGBA"), overlay)
 
-        # Circular crop inside ring
-        crop_size = 390
-        thumb = yt_thumb.resize((crop_size, crop_size))
-        mask = Image.new("L", (crop_size, crop_size), 0)
-        ImageDraw.Draw(mask).ellipse((0, 0, crop_size, crop_size), fill=255)
-        thumb.putalpha(mask)
-        final.paste(thumb, (105, 165), mask=thumb)  # circle aligned
-
-        # Paste UI overlay
-        final.paste(template, (0, 0), mask=template)
-
-        # Fonts
-        font_title = ImageFont.truetype("XQUEEN/assets/font.ttf", 50)
-        font_small = ImageFont.truetype("XQUEEN/assets/font2.ttf", 25)
-
-        # Text elements
-        draw = ImageDraw.Draw(final)
-        draw.text((530, 20), clear(title), fill="white", font=font_title)                       # Title
-        draw.text((530, 350), f"00:00 / {duration}", fill="white", font=font_small)             # Duration
-        draw.text((1200, 690), "XQUEEN SERVER", fill="white", font=font_small, anchor="rd")     # Server Tag
-
-        # Save final image
-        final.convert("RGB").save(output_path)
+        # Step 6: Save final result
+        final.save(output_path)
         os.remove(f"cache/tmp_{videoid}.png")
         return output_path
 
