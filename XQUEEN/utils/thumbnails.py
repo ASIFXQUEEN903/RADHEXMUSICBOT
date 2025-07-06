@@ -4,6 +4,8 @@ import aiofiles
 import aiohttp
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 from youtubesearchpython.__future__ import VideosSearch
+from pyrogram import Client
+from pyrogram.types import Message
 from config import YOUTUBE_IMG_URL
 
 # Constants
@@ -44,19 +46,33 @@ def trim_to_width(text: str, font: ImageFont.FreeTypeFont, max_w: int) -> str:
             return text[:i] + ellipsis
     return ellipsis
 
-async def get_thumb(videoid: str) -> str:
-    cache_path = os.path.join(CACHE_DIR, f"{videoid}_v4.png")
+async def download_user_dp(client: Client, message: Message, save_path: str) -> str:
+    try:
+        photos = await client.get_profile_photos(message.from_user.id, limit=1)
+        if photos.total_count > 0:
+            await client.download_media(photos[0].file_id, file_name=save_path)
+            return save_path
+    except Exception as e:
+        print("DP Download Failed:", e)
+    return None
+
+def paste_dp_circle(bg: Image.Image, dp_path: str, x: int, y: int, size: int = 48):
+    if os.path.exists(dp_path):
+        dp = Image.open(dp_path).resize((size, size)).convert("RGBA")
+        mask = Image.new("L", (size, size), 0)
+        ImageDraw.Draw(mask).ellipse((0, 0, size, size), fill=255)
+        bg.paste(dp, (x, y), mask)
+
+async def generate_thumb(client: Client, message: Message, videoid: str) -> str:
+    cache_path = os.path.join(CACHE_DIR, f"{videoid}_with_dp.png")
     if os.path.exists(cache_path):
         return cache_path
 
-    # YouTube video data fetch
+    # YouTube video data
     results = VideosSearch(f"https://www.youtube.com/watch?v={videoid}", limit=1)
     try:
         results_data = await results.next()
-        result_items = results_data.get("result", [])
-        if not result_items:
-            raise ValueError("No results found.")
-        data = result_items[0]
+        data = results_data["result"][0]
         title = re.sub(r"\W+", " ", data.get("title", "Unsupported Title")).title()
         thumbnail = data.get("thumbnails", [{}])[0].get("url", YOUTUBE_IMG_URL)
         duration = data.get("duration")
@@ -64,11 +80,11 @@ async def get_thumb(videoid: str) -> str:
     except Exception:
         title, thumbnail, duration, views = "Unsupported Title", YOUTUBE_IMG_URL, None, "Unknown Views"
 
-    is_live = not duration or str(duration).strip().lower() in {"", "live", "live now"}
-    duration_text = "Live" if is_live else duration or "Unknown Mins"
+    is_live = not duration or str(duration).lower() in {"", "live", "live now"}
+    duration_text = "Live" if is_live else duration or "Unknown"
 
     # Download thumbnail
-    thumb_path = os.path.join(CACHE_DIR, f"thumb{videoid}.png")
+    thumb_path = os.path.join(CACHE_DIR, f"thumb_{videoid}.png")
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(thumbnail) as resp:
@@ -78,11 +94,11 @@ async def get_thumb(videoid: str) -> str:
     except Exception:
         return YOUTUBE_IMG_URL
 
-    # Create base image
+    # Base image
     base = Image.open(thumb_path).resize((1280, 720)).convert("RGBA")
     bg = ImageEnhance.Brightness(base.filter(ImageFilter.BoxBlur(10))).enhance(0.6)
 
-    # Frosted glass panel
+    # Frosted panel
     panel_area = bg.crop((PANEL_X, PANEL_Y, PANEL_X + PANEL_W, PANEL_Y + PANEL_H))
     overlay = Image.new("RGBA", (PANEL_W, PANEL_H), (255, 255, 255, TRANSPARENCY))
     frosted = Image.alpha_composite(panel_area, overlay)
@@ -90,12 +106,12 @@ async def get_thumb(videoid: str) -> str:
     ImageDraw.Draw(mask).rounded_rectangle((0, 0, PANEL_W, PANEL_H), 50, fill=255)
     bg.paste(frosted, (PANEL_X, PANEL_Y), mask)
 
-    # Draw details
+    # Draw objects
     draw = ImageDraw.Draw(bg)
     try:
-        title_font = ImageFont.truetype("XQUEEN/assets/font2.ttf", 32)
-        regular_font = ImageFont.truetype("XQUEEN/assets/font.ttf", 18)
-    except OSError:
+        title_font = ImageFont.truetype("SONALI/assets/thumb/font2.ttf", 32)
+        regular_font = ImageFont.truetype("SONALI/assets/thumb/font.ttf", 18)
+    except:
         title_font = regular_font = ImageFont.load_default()
 
     thumb = base.resize((THUMB_W, THUMB_H))
@@ -112,21 +128,17 @@ async def get_thumb(videoid: str) -> str:
     draw.ellipse([(BAR_X + BAR_RED_LEN - 7, BAR_Y - 7), (BAR_X + BAR_RED_LEN + 7, BAR_Y + 7)], fill="red")
 
     draw.text((BAR_X, BAR_Y + 15), "00:00", fill="black", font=regular_font)
-    end_text = "Live" if is_live else duration_text
-    draw.text((BAR_X + BAR_TOTAL_LEN - (90 if is_live else 60), BAR_Y + 15), end_text, fill="red" if is_live else "black", font=regular_font)
+    draw.text((BAR_X + BAR_TOTAL_LEN - (90 if is_live else 60), BAR_Y + 15), duration_text, fill="red" if is_live else "black", font=regular_font)
 
-    # Icons
-    icons_path = "SONALI/assets/thumb/play_icons.png"
-    if os.path.isfile(icons_path):
-        ic = Image.open(icons_path).resize((ICONS_W, ICONS_H)).convert("RGBA")
-        r, g, b, a = ic.split()
-        black_ic = Image.merge("RGBA", (r.point(lambda *_: 0), g.point(lambda *_: 0), b.point(lambda *_: 0), a))
-        bg.paste(black_ic, (ICONS_X, ICONS_Y), black_ic)
+    # DP circle on red bar
+    user_dp_path = os.path.join(CACHE_DIR, f"{message.from_user.id}_dp.jpg")
+    await download_user_dp(client, message, user_dp_path)
+    paste_dp_circle(bg, user_dp_path, BAR_X + BAR_RED_LEN - 24, BAR_Y - 24)
 
-    # Cleanup and save
+    # Save and cleanup
     try:
         os.remove(thumb_path)
-    except OSError:
+    except:
         pass
 
     bg.save(cache_path)
