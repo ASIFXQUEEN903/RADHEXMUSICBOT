@@ -8,34 +8,8 @@ from pyrogram import Client
 from pyrogram.types import Message
 from config import YOUTUBE_IMG_URL
 
-# Constants
 CACHE_DIR = "cache"
 os.makedirs(CACHE_DIR, exist_ok=True)
-
-PANEL_W, PANEL_H = 763, 545
-PANEL_X = (1280 - PANEL_W) // 2
-PANEL_Y = 88
-TRANSPARENCY = 170
-INNER_OFFSET = 36
-
-THUMB_W, THUMB_H = 542, 273
-THUMB_X = PANEL_X + (PANEL_W - THUMB_W) // 2
-THUMB_Y = PANEL_Y + INNER_OFFSET
-
-TITLE_X = 377
-META_X = 377
-TITLE_Y = THUMB_Y + THUMB_H + 10
-META_Y = TITLE_Y + 45
-
-BAR_X, BAR_Y = 388, META_Y + 45
-BAR_RED_LEN = 280
-BAR_TOTAL_LEN = 480
-
-ICONS_W, ICONS_H = 415, 45
-ICONS_X = PANEL_X + (PANEL_W - ICONS_W) // 2
-ICONS_Y = BAR_Y + 48
-
-MAX_TITLE_WIDTH = 580
 
 def trim_to_width(text: str, font: ImageFont.FreeTypeFont, max_w: int) -> str:
     ellipsis = "…"
@@ -68,17 +42,16 @@ async def get_thumb(client: Client, message: Message, videoid: str) -> str:
     if os.path.exists(cache_path):
         return cache_path
 
-    # YouTube video data
     results = VideosSearch(f"https://www.youtube.com/watch?v={videoid}", limit=1)
     try:
         results_data = await results.next()
         data = results_data["result"][0]
-        title = re.sub(r"\W+", " ", data.get("title", "Unsupported Title")).title()
+        title = re.sub(r"\W+", " ", data.get("title", "No Title")).title()
         thumbnail = data.get("thumbnails", [{}])[0].get("url", YOUTUBE_IMG_URL)
         duration = data.get("duration")
         views = data.get("viewCount", {}).get("short", "Unknown Views")
-    except Exception:
-        title, thumbnail, duration, views = "Unsupported Title", YOUTUBE_IMG_URL, None, "Unknown Views"
+    except:
+        title, thumbnail, duration, views = "No Title", YOUTUBE_IMG_URL, None, "Unknown Views"
 
     is_live = not duration or str(duration).lower() in {"", "live", "live now"}
     duration_text = "Live" if is_live else duration or "Unknown"
@@ -91,51 +64,51 @@ async def get_thumb(client: Client, message: Message, videoid: str) -> str:
                 if resp.status == 200:
                     async with aiofiles.open(thumb_path, "wb") as f:
                         await f.write(await resp.read())
-    except Exception:
-        return YOUTUBE_IMG_URL
+    except Exception as e:
+        print("Thumbnail download error:", e)
+        return None
 
-    # Base image
-    base = Image.open(thumb_path).resize((1280, 720)).convert("RGBA")
+    # Open and prepare background
+    try:
+        base = Image.open(thumb_path).resize((1280, 720)).convert("RGBA")
+    except:
+        return None
+
     bg = ImageEnhance.Brightness(base.filter(ImageFilter.BoxBlur(10))).enhance(0.6)
 
-    # Frosted panel
-    panel_area = bg.crop((PANEL_X, PANEL_Y, PANEL_X + PANEL_W, PANEL_Y + PANEL_H))
-    overlay = Image.new("RGBA", (PANEL_W, PANEL_H), (255, 255, 255, TRANSPARENCY))
-    frosted = Image.alpha_composite(panel_area, overlay)
-    mask = Image.new("L", (PANEL_W, PANEL_H), 0)
-    ImageDraw.Draw(mask).rounded_rectangle((0, 0, PANEL_W, PANEL_H), 50, fill=255)
-    bg.paste(frosted, (PANEL_X, PANEL_Y), mask)
-
-    # Draw objects
+    # Draw info panel
     draw = ImageDraw.Draw(bg)
     try:
         title_font = ImageFont.truetype("XQUEEN/assets/font2.ttf", 32)
-        regular_font = ImageFont.truetype("XQUEEN/assets/font.ttf", 18)
+        reg_font = ImageFont.truetype("XQUEEN/assets/font.ttf", 18)
     except:
-        title_font = regular_font = ImageFont.load_default()
+        title_font = reg_font = ImageFont.load_default()
 
-    thumb = base.resize((THUMB_W, THUMB_H))
-    tmask = Image.new("L", thumb.size, 0)
-    ImageDraw.Draw(tmask).rounded_rectangle((0, 0, THUMB_W, THUMB_H), 20, fill=255)
-    bg.paste(thumb, (THUMB_X, THUMB_Y), tmask)
+    panel_x, panel_y = 250, 120
+    draw.rounded_rectangle((panel_x, panel_y, 1030, 600), 40, fill=(255,255,255,180))
 
-    draw.text((TITLE_X, TITLE_Y), trim_to_width(title, title_font, MAX_TITLE_WIDTH), fill="black", font=title_font)
-    draw.text((META_X, META_Y), f"YouTube | {views}", fill="black", font=regular_font)
+    # Paste thumbnail with mask
+    thumb = base.resize((500, 270))
+    mask = Image.new("L", thumb.size, 0)
+    ImageDraw.Draw(mask).rounded_rectangle((0, 0, 500, 270), 20, fill=255)
+    bg.paste(thumb, (390, 150), mask)
 
-    # Progress bar
-    draw.line([(BAR_X, BAR_Y), (BAR_X + BAR_RED_LEN, BAR_Y)], fill="red", width=6)
-    draw.line([(BAR_X + BAR_RED_LEN, BAR_Y), (BAR_X + BAR_TOTAL_LEN, BAR_Y)], fill="gray", width=5)
-    draw.ellipse([(BAR_X + BAR_RED_LEN - 7, BAR_Y - 7), (BAR_X + BAR_RED_LEN + 7, BAR_Y + 7)], fill="red")
+    # Draw text
+    draw.text((390, 440), trim_to_width(title, title_font, 480), font=title_font, fill="black")
+    draw.text((390, 480), f"YouTube | {views}", font=reg_font, fill="black")
+    draw.text((390, 510), "00:00", font=reg_font, fill="black")
+    draw.text((800, 510), duration_text, font=reg_font, fill="red" if is_live else "black")
 
-    draw.text((BAR_X, BAR_Y + 15), "00:00", fill="black", font=regular_font)
-    draw.text((BAR_X + BAR_TOTAL_LEN - (90 if is_live else 60), BAR_Y + 15), duration_text, fill="red" if is_live else "black", font=regular_font)
+    # Draw red bar
+    draw.line([(390, 500), (670, 500)], fill="red", width=6)
+    draw.line([(670, 500), (870, 500)], fill="gray", width=5)
+    draw.ellipse([(663, 493), (677, 507)], fill="red")
 
-    # DP circle on red bar
-    user_dp_path = os.path.join(CACHE_DIR, f"{message.from_user.id}_dp.jpg")
-    await download_user_dp(client, message, user_dp_path)
-    paste_dp_circle(bg, user_dp_path, BAR_X + BAR_RED_LEN - 24, BAR_Y - 24)
+    # Paste user DP
+    dp_path = os.path.join(CACHE_DIR, f"{message.from_user.id}_dp.jpg")
+    await download_user_dp(client, message, dp_path)
+    paste_dp_circle(bg, dp_path, 650, 470, 48)
 
-    # Save and cleanup
     try:
         os.remove(thumb_path)
     except:
