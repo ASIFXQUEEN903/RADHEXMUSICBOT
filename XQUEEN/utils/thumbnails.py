@@ -63,7 +63,7 @@ def paste_dp_circle(bg: Image.Image, dp_path: str, x: int, y: int, size: int = 4
         ImageDraw.Draw(mask).ellipse((0, 0, size, size), fill=255)
         bg.paste(dp, (x, y), mask)
 
-async def generate_thumb(client: Client, message: Message, videoid: str) -> str:
+async def get_thumb(client: Client, message: Message, videoid: str) -> str:
     cache_path = os.path.join(CACHE_DIR, f"{videoid}_with_dp.png")
     if os.path.exists(cache_path):
         return cache_path
