@@ -142,6 +142,10 @@ async def get_thumb(videoid: str, user_dp_url: str = None) -> str:
                             dp_x = PANEL_X + 20
                             dp_y = PANEL_Y + PANEL_H - dp_size - 20
                             bg.paste(dp_img, (dp_x, dp_y), mask)
+
+                            # Debug circle (green border)
+                            draw.ellipse((dp_x, dp_y, dp_x + dp_size, dp_y + dp_size), outline="green", width=2)
+
         except Exception as e:
             print(f"User DP error: {e}")
 
