@@ -109,8 +109,8 @@ async def get_thumb(client: Client, message: Message, videoid: str) -> str:
     # Draw objects
     draw = ImageDraw.Draw(bg)
     try:
-        title_font = ImageFont.truetype("SONALI/assets/thumb/font2.ttf", 32)
-        regular_font = ImageFont.truetype("SONALI/assets/thumb/font.ttf", 18)
+        title_font = ImageFont.truetype("XQUEEN/assets/font2.ttf", 32)
+        regular_font = ImageFont.truetype("XQUEEN/assets/font.ttf", 18)
     except:
         title_font = regular_font = ImageFont.load_default()
 
