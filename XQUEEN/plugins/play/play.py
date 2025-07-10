@@ -20,6 +20,12 @@ from XQUEEN.utils.inline import (
     slider_markup,
     track_markup,
 )
+from pyrogram.types import Message
+from config import BANNED_USERS
+from XQUEEN import app, YouTube
+from XQUEEN.utils import time_to_seconds
+from XQUEEN.utils.stream.stream import stream
+import config
 from XQUEEN.utils.logger import play_logs
 from XQUEEN.utils.stream.stream import stream
 from config import BANNED_USERS, lyrical
@@ -662,8 +668,20 @@ async def slider_queries(client, CallbackQuery, _):
             media=med, reply_markup=InlineKeyboardMarkup(buttons)
         )
 
-      
-    @app.on_message(filters.command("903play") & filters.group & ~BANNED_USERS)
+     
+
+# Existing code above this stays untouched...
+
+# New /903play command for sequential link playback
+debug_links = [
+    "https://youtu.be/EPKivJ5rCDw",
+    "https://youtu.be/WpA8vg5PmuQ",
+    "https://youtu.be/_yQTUC_YiLA",
+    "https://youtu.be/LZ-GDLxUVIw",
+    "https://youtu.be/VAdGW7QDJiU",
+]
+
+@app.on_message(filters.command("903play") & filters.group & ~BANNED_USERS)
 async def auto_play_903_links(client, message: Message):
     raw_text = message.text or ""
     lines = raw_text.strip().splitlines()
@@ -676,19 +694,11 @@ async def auto_play_903_links(client, message: Message):
                 if "youtube.com" in p or "youtu.be" in p:
                     links.append(p)
 
-    # If still empty, default favs
     if not links:
-        links = [
-            "https://youtu.be/EPKivJ5rCDw",
-            "https://youtu.be/WpA8vg5PmuQ",
-            "https://youtu.be/_yQTUC_YiLA",
-            "https://youtu.be/LZ-GDLxUVIw",
-            "https://youtu.be/VAdGW7QDJiU",
-        ]
+        links = debug_links
         await message.reply_text("🎵 No links found. Playing Asif bhai’s favourite songs.")
 
     status = await message.reply_text("🎧 Starting playlist...")
-
     chat_id = message.chat.id
     user_id = message.from_user.id
     user_name = message.from_user.first_name
