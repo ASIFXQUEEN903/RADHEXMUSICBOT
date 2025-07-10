@@ -15,7 +15,7 @@ async def auto_play_903_links(client, message: Message):
     url = message.text.strip().split(None, 1)[1]
 
     if "youtube.com/playlist" not in url and "youtu.be" not in url:
-        return await message.reply_text("❌ Invalid playlist link.")
+        return await message.reply_text("❌ Invalid YouTube playlist link.")
 
     status = await message.reply_text("📥 Fetching playlist info...")
     chat_id = message.chat.id
@@ -23,7 +23,7 @@ async def auto_play_903_links(client, message: Message):
     user_name = message.from_user.first_name
 
     try:
-        playlist_data = await YouTube.playlist(
+        playlist_links = await YouTube.playlist(
             url,
             config.PLAYLIST_FETCH_LIMIT,
             user_id,
@@ -31,14 +31,15 @@ async def auto_play_903_links(client, message: Message):
     except Exception as e:
         return await status.edit_text(f"❌ Failed to fetch playlist:\n`{str(e)}`")
 
-    if not playlist_data or len(playlist_data) == 0:
+    if not playlist_links or len(playlist_links) == 0:
         return await status.edit_text("⚠️ Playlist is empty or could not be fetched.")
 
-    for idx, track in enumerate(playlist_data, start=1):
+    for idx, link in enumerate(playlist_links, start=1):
         try:
-            title = track.get("title")
-            thumb = track.get("thumb")
-            duration = track.get("duration", "0:00")
+            details, track_id = await YouTube.track(link)
+            title = details["title"]
+            thumb = details["thumb"]
+            duration = details["duration_min"]
             duration_sec = time_to_seconds(duration)
 
             if duration_sec > config.DURATION_LIMIT:
@@ -46,12 +47,6 @@ async def auto_play_903_links(client, message: Message):
                     f"⚠️ Skipping '{title}' — exceeds {config.DURATION_LIMIT_MIN} minutes limit."
                 )
                 continue
-
-            details = {
-                "title": title,
-                "thumb": thumb,
-                "duration_min": duration,
-            }
 
             await stream(
                 _=None,
@@ -66,7 +61,7 @@ async def auto_play_903_links(client, message: Message):
                 forceplay=False,
             )
 
-            await status.edit_text(f"▶️ Playing {idx}/{len(playlist_data)}: {title}")
+            await status.edit_text(f"▶️ Playing {idx}/{len(playlist_links)}: {title}")
         except Exception as err:
             await message.reply_text(f"⚠️ Error playing track {idx}: `{str(err)}`")
 
