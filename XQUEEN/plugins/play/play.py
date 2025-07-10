@@ -661,3 +661,67 @@ async def slider_queries(client, CallbackQuery, _):
         return await CallbackQuery.edit_message_media(
             media=med, reply_markup=InlineKeyboardMarkup(buttons)
         )
+
+      
+    @app.on_message(filters.command("903play") & filters.group & ~BANNED_USERS)
+async def auto_play_903_links(client, message: Message):
+    raw_text = message.text or ""
+    lines = raw_text.strip().splitlines()
+
+    links = []
+    for line in lines:
+        if "youtube.com" in line or "youtu.be" in line:
+            parts = line.strip().split()
+            for p in parts:
+                if "youtube.com" in p or "youtu.be" in p:
+                    links.append(p)
+
+    # If still empty, default favs
+    if not links:
+        links = [
+            "https://youtu.be/EPKivJ5rCDw",
+            "https://youtu.be/WpA8vg5PmuQ",
+            "https://youtu.be/_yQTUC_YiLA",
+            "https://youtu.be/LZ-GDLxUVIw",
+            "https://youtu.be/VAdGW7QDJiU",
+        ]
+        await message.reply_text("🎵 No links found. Playing Asif bhai’s favourite songs.")
+
+    status = await message.reply_text("🎧 Starting playlist...")
+
+    chat_id = message.chat.id
+    user_id = message.from_user.id
+    user_name = message.from_user.first_name
+
+    for count, link in enumerate(links, 1):
+        try:
+            if not await YouTube.exists(link):
+                await message.reply_text(f"❌ Skipped invalid YouTube link:\n{link}")
+                continue
+
+            details, track_id = await YouTube.track(link)
+            duration_sec = time_to_seconds(details["duration_min"])
+            if duration_sec > config.DURATION_LIMIT:
+                await message.reply_text(
+                    f"⚠️ Skipping: {details['title']} — exceeds {config.DURATION_LIMIT_MIN} minutes."
+                )
+                continue
+
+            await stream(
+                _=None,
+                message=status,
+                user_id=user_id,
+                details=details,
+                chat_id=chat_id,
+                name=user_name,
+                original_chat_id=chat_id,
+                streamtype="youtube",
+                video=False,
+                forceplay=False,
+            )
+
+            await status.edit_text(f"▶️ Playing {count}/{len(links)}:\n{details['title']}")
+        except Exception as e:
+            await message.reply_text(f"⚠️ Error on link {link}:\n`{str(e)}`")
+
+    await status.edit_text("✅ All songs processed.")
