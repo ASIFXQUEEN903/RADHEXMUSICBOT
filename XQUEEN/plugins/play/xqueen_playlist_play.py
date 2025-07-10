@@ -50,7 +50,7 @@ async def auto_play_903_links(client, message: Message):
 
             await stream(
                 _=None,
-                message=status,
+                mystic=status,  # ✅ CORRECT ARGUMENT
                 user_id=user_id,
                 details=details,
                 chat_id=chat_id,
