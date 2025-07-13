@@ -107,6 +107,9 @@ async def get_thumb(videoid: str, user_dp_url: str = None) -> str:
     draw.text((TITLE_X, TITLE_Y), trim_to_width(title, title_font, MAX_TITLE_WIDTH), fill="black", font=title_font)
     draw.text((META_X, META_Y), f"YouTube | {views}", fill="black", font=regular_font)
 
+    #xquen server
+    draw.text((5, 5), "XQUEEN SERVER", fill="purple", font=regular_font)
+    
     # Progress bar
     draw.line([(BAR_X, BAR_Y), (BAR_X + BAR_RED_LEN, BAR_Y)], fill="red", width=6)
     draw.line([(BAR_X + BAR_RED_LEN, BAR_Y), (BAR_X + BAR_TOTAL_LEN, BAR_Y)], fill="gray", width=5)
