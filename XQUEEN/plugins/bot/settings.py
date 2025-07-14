@@ -218,11 +218,12 @@ async def addition(client, CallbackQuery, _):
     except MessageNotModified:
         return
 
+
 @app.on_callback_query(filters.regex("gib_source") & ~BANNED_USERS)
 @languageCB
 async def gib_repo(client, CallbackQuery, _):
     await CallbackQuery.edit_message_media(
-        InputMediaVideo("https://files.catbox.moe/8edpbi.mp4"),
+        InputMediaVideo("https://files.catbox.moe/8edpbi.mp4", has_spoiler=True),
         reply_markup=InlineKeyboardMarkup(
             [[InlineKeyboardButton(text="ʙᴀᴄᴋ", callback_data="gib_back_PM")]]
         ),
@@ -411,7 +412,7 @@ async def gib_back_to_panel(client, CallbackQuery, _):
 
         # Replace video with a photo (or remove media)
         await CallbackQuery.edit_message_media(
-            media=InputMediaPhoto("https://files.catbox.moe/f8i9s1.jpg"),  # 👈 set your original photo here
+            media=InputMediaPhoto("https://files.catbox.moe/f8i9s1.jpg", has_spoiler=True),  # 👈 spoiler added
             reply_markup=InlineKeyboardMarkup(buttons)
         )
 
