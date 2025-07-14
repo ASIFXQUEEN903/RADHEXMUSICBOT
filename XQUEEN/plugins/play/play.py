@@ -389,10 +389,11 @@ async def play_commnd(
             )
             await mystic.delete()
             await message.reply_photo(
-                photo=img,
-                caption=cap,
-                reply_markup=InlineKeyboardMarkup(buttons),
-            )
+             photo=img,
+           caption=cap,
+      reply_markup=InlineKeyboardMarkup(buttons),
+       has_spoiler=True,
+    )
             return await play_logs(message, streamtype=f"Playlist : {plist_type}")
         else:
             if slider:
@@ -407,13 +408,14 @@ async def play_commnd(
                 )
                 await mystic.delete()
                 await message.reply_photo(
-                    photo=details["thumb"],
-                    caption=_["play_10"].format(
-                        details["title"].title(),
-                        details["duration_min"],
-                    ),
-                    reply_markup=InlineKeyboardMarkup(buttons),
-                )
+              photo=details["thumb"],
+         caption=_["play_10"].format(
+               details["title"].title(),
+            details["duration_min"],
+         ),
+       reply_markup=InlineKeyboardMarkup(buttons),
+       has_spoiler=True,
+   )
                 return await play_logs(message, streamtype=f"Searched on Youtube")
             else:
                 buttons = track_markup(
@@ -652,12 +654,13 @@ async def slider_queries(client, CallbackQuery, _):
         title, duration_min, thumbnail, vidid = await YouTube.slider(query, query_type)
         buttons = slider_markup(_, vidid, user_id, query, query_type, cplay, fplay)
         med = InputMediaPhoto(
-            media=thumbnail,
-            caption=_["play_10"].format(
-                title.title(),
-                duration_min,
-            ),
-        )
+    media=thumbnail,
+    caption=_["play_10"].format(
+        title.title(),
+        duration_min,
+    ),
+    has_spoiler=True,
+ )
         return await CallbackQuery.edit_message_media(
             media=med, reply_markup=InlineKeyboardMarkup(buttons)
         )
