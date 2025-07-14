@@ -427,10 +427,11 @@ async def play_commnd(
                 )
                 await mystic.delete()
                 await message.reply_photo(
-                    photo=img,
-                    caption=cap,
-                    reply_markup=InlineKeyboardMarkup(buttons),
-                )
+                     photo=img,
+                  caption=cap,
+           reply_markup=InlineKeyboardMarkup(buttons),
+             has_spoiler=True,
+            )
                 return await play_logs(message, streamtype=f"URL Searched Inline")
 
 
@@ -631,14 +632,15 @@ async def slider_queries(client, CallbackQuery, _):
         except:
             pass
         title, duration_min, thumbnail, vidid = await YouTube.slider(query, query_type)
-        buttons = slider_markup(_, vidid, user_id, query, query_type, cplay, fplay)
-        med = InputMediaPhoto(
-            media=thumbnail,
-            caption=_["play_10"].format(
-                title.title(),
-                duration_min,
-            ),
-        )
+        buttons = slider_markup(_, vidid, user_id, query, query_type, cplay, fplay)          
+         med = InputMediaPhoto(
+           media=thumbnail,
+       caption=_["play_10"].format(
+            title.title(),
+             duration_min,
+       ),
+         has_spoiler=True,
+       )
         return await CallbackQuery.edit_message_media(
             media=med, reply_markup=InlineKeyboardMarkup(buttons)
         )
