@@ -8,11 +8,12 @@ from XQUEEN import app
 async def help(client: Client, message: Message):
     await message.reply_photo(
         photo="https://files.catbox.moe/ieqq3j.jpg",
+        has_spoiler=True,  # ✅ Blur the image
         caption="""
-𓆩🍁𓆪 𝐇𝐞𝐲 𝐁𝐚𝐛𝐲 💞
+||𓆩🍁𓆪 𝐇𝐞𝐲 𝐁𝐚𝐛𝐲 💞||
 
- 𓆩 𝐐𝐔𝐄𝐄𝐍 𝐊𝐀 𝐎𝐅𝐅𝐈𝐂𝐀𝐋 𝐑𝐄𝐏𝐎 𓆪
-𓆩 399 ᴘᴀʏᴍᴇɴᴛ ᴋᴀʀᴋᴇ @ASHLF903 ᴀꜱᴋ ꜰᴏʀ ʀᴇᴘᴏ 𓆪
+||𓆩 𝐐𝐔𝐄𝐄𝐍 𝐊𝐀 𝐎𝐅𝐅𝐈𝐂𝐀𝐋 𝐑𝐄𝐏𝐎 𓆪||
+||𓆩 399 ᴘᴀʏᴍᴇɴᴛ ᴋᴀʀᴋᴇ @ASHLF903 ᴀꜱᴋ ꜰᴏʀ ʀᴇᴘᴏ 𓆪||
         """,
         reply_markup=InlineKeyboardMarkup(
             [
@@ -24,11 +25,3 @@ async def help(client: Client, message: Message):
             ]
         ),
     )
-
-
-__MODULE__ = "Sᴏᴜʀᴄᴇ"
-__HELP__ = """
-## 🌀 Rᴇᴘᴏ Mᴏᴅᴜʟᴇ
-
-➤ `/repo` – Get the stylish source code repo of this bot.
-"""
