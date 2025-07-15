@@ -29,7 +29,7 @@ from strings import get_string
 async def start_pm(client, message: Message, _):
     await add_served_user(message.from_user.id)
 
-    sticker = await message.reply_sticker("CAACAgUAAxkBAAEOxbdoWln3bXut27cwii0Uxy-zltlzHAACYQUAAv-7OFbUM1qnUk4VFjYE")
+    sticker = await message.reply_sticker("CAACAgUAAxkBAAEO7tBodg_BlenwT-JC3YeJ01VFhwxhXAACxg8AAkqwOFT8FHFjB1fWUDYE")
     await asyncio.sleep(0.5)
     await sticker.delete()
 
