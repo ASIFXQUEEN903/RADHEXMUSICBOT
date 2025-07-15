@@ -21,8 +21,8 @@ DURATION_LIMIT_MIN = int(getenv("DURATION_LIMIT", 10000))
 # Chat id of a group for logging bot's activities
 LOGGER_ID = int(getenv("LOGGER_ID", None))
 
-# Get this value from @purvi_music_bot on Telegram by /id
-OWNER_ID = int(getenv("OWNER_ID", 5099049612))
+# Get this value from @asifxquwwn on Telegram by /id
+OWNER_ID = int(getenv("OWNER_ID", 7221110987))
 
 ## Fill these variables if you're deploying on heroku.
 # Your heroku app name
@@ -32,7 +32,7 @@ HEROKU_API_KEY = getenv("HEROKU_API_KEY")
 
 UPSTREAM_REPO = getenv(
     "UPSTREAM_REPO",
-    "https://github.com/ASIFXQUEEN903/XQUEEN-MUSIC--903",
+    "https://github.com/ASIFXQUEEN903/RADHEXMUSICBOT",
 )
 UPSTREAM_BRANCH = getenv("UPSTREAM_BRANCH", "XQUEEN")
 GIT_TOKEN = getenv(
