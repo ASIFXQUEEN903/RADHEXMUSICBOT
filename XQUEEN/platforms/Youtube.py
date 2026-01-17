@@ -5,7 +5,7 @@ from typing import Union
 import yt_dlp
 from pyrogram.enums import MessageEntityType
 from pyrogram.types import Message
-from ShrutiMusic.utils.formatters import time_to_seconds
+from XQUEEN.utils.formatters import time_to_seconds
 import aiohttp
 from XQUEEN import LOGGER
 
